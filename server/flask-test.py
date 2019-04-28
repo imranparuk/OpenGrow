@@ -62,13 +62,19 @@ def resp_complete(datetimes):
 
 @app.route("/")
 def home():
-    # ret = resp_force(0)
-    ret = resp_force_time(time_list)
+    ret = resp_force(0)
+    # ret = resp_force_time(time_list)
     # ret = resp_complete(complete_list)
 
     return jsonify(ret)
 
-import os
+@app.route("/version/")
+def version():
+    ret = {
+        "version": "0.1.0"
+    }
+    return jsonify(ret)
+
 @app.route('/download/<path:filename>', methods=['GET', 'POST'])
 def download(filename):
     return send_file('/home/imran/Documents/personal/projects/OpenGrow/server/OTA/{}'.format(filename), attachment_filename=filename)

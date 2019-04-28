@@ -68,7 +68,6 @@ class Rtc(object):
 class LightController(object):
     def __init__(self, url, _pin, db_name='light_c'):
         self.url = url
-        self.do_connect_network()
         self.pin = machine.Pin(_pin, machine.Pin.OUT)
 
         self.f = self.db_init(db_name)
@@ -193,21 +192,14 @@ class LightController(object):
             print("low")
             return False
 
-    @staticmethod
-    def do_connect_network():
-        wlan = network.WLAN(network.STA_IF)
-        wlan.active(True)
-        if not wlan.isconnected():
-            print('connecting to network...')
-            wlan.connect('HUAWEI-B618-D500', 'J7M12T3RMNR')  # connect to an AP
-            while not wlan.isconnected():
-                pass
-        print('network config:', wlan.ifconfig())
-
-
+# from ota import OTA
 def main():
 
     url = 'http://192.168.8.130:5000/'
+    ota_url = 'http://192.168.8.130:5000/download/'
+    v_url = 'http://192.168.8.130:5000/version/'
+    #
+    # o = OTA(ota_url, v_url)
 
     lc = LightController(url, 2)
     lc()
@@ -216,6 +208,5 @@ def main():
     #     lc()
     #     utime.sleep(1)
 
-
-# main()
+main()
 
