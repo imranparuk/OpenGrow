@@ -202,11 +202,11 @@ def main():
     # o = OTA(ota_url, v_url)
 
     lc = LightController(url, 2)
-    lc()
+    # lc()
 
-    # while True:
-    #     lc()
-    #     utime.sleep(1)
+    while True:
+        lc()
+        utime.sleep(1)
 
 main()
 

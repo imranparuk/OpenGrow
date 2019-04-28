@@ -18,9 +18,10 @@ class OTA(object):
         self.v_url = v_url
 
         if self.get_online():
-            # self.ensure_dirs('/new/')
+            self.ensure_dirs('/new/')
             self.download_file("{}{}".format(self.url, SRC_FILENAME), '/new/{}'.format(SRC_FILENAME))
             self.update_file()
+            # machine.reset()
 
     def get_online(self):
         ov = self.get_version_online(self.v_url)
