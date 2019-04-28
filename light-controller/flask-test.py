@@ -66,8 +66,8 @@ def time_to_ntp(date):
 
 def time_to_resp(data):
     timea, timeb = data
-    datea1, datea2 = datetime.datetime(2019, 1, 28, 14, 22), datetime.datetime(2019, 1, 28, 14, 22)
-    dateb1, dateb2 = datetime.datetime(2019, 4, 28, 14, 22), datetime.datetime(2019, 4, 29, 14, 22)
+    datea1, datea2 = datetime.datetime(2019, 1, 28, 14, 22), datetime.datetime(2019, 1, 27, 14, 22)
+    dateb1, dateb2 = datetime.datetime(2019, 4, 28, 14, 22), datetime.datetime(2019, 4, 27, 14, 22)
     datec1, datec2 = datetime.datetime(2019, 4, 26, 14, 22), datetime.datetime(2019, 4, 27, 14, 22)
 
 

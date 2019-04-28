@@ -17,6 +17,7 @@ def get_data(_url):
         print("OSError in request")
         return None
     except MemoryError:
+        pass
 
 
 class OTA(object):
@@ -80,8 +81,13 @@ class LightController(object):
 
     def __call__(self, *args, **kwargs):
         self.rtc.set_time_network()
-        print("Saved Db: {}".format(self.process_data_get()))
-        self.process_data_db()
+        pdg = self.process_data_get()
+        print("Saved Db: {}".format(pdg))
+        if pdg:
+            self.process_data_db()
+        else:
+            print("No Data, default to off mode")
+            self.set_relay(b'0')
 
     def __del__(self):
         self.f.close()
@@ -205,11 +211,11 @@ def main():
 
     url = 'http://192.168.8.130:5000/'
     lc = LightController(url, 2)
-    lc()
 
-    # while True:
-    #     lc()
-    #     time.sleep(1)
+
+    while True:
+        lc()
+        utime.sleep(1)
 
 
 main()
