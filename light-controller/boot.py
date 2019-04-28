@@ -1,5 +1,10 @@
-# This file is executed on every boot (including wake-boot from deepsleep)
-# import esp
-# esp.osdebug(None)
-# import webrepl
-# webrepl.start()
+import main
+from ota import OTA
+
+ota_url = 'http://192.168.8.130:5000/download/'
+filename = 'main.py'
+
+o = OTA(ota_url, filename)
+o.update_file()
+
+main.main()

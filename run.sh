@@ -9,7 +9,7 @@ esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash --flash_size=detect 0 f
 
 #ampy -p /dev/ttyUSB0 put main.py
 #ampy -p /dev/ttyUSB0 get main.py
-#ampy -p /dev/ttyUSB1 run main.py
+#ampy -p /dev/ttyUSB0 run light-controller/main.py
 
 
 #

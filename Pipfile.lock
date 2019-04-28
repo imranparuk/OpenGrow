@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "8cf1a3d5b06266840463ea3457d3fb3793e8e728afafbbc8c1bda8d5260175f7"
+            "sha256": "1f0ee34d94f5b51555198b1f6dc200958df9b64180f44076792a484ea23bc456"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -17,7 +17,7 @@
     },
     "default": {
         "adafruit-ampy": {
-            "path": "./light-controller/ampy"
+            "path": "./general/ampy"
         },
         "click": {
             "hashes": [

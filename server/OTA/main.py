@@ -210,11 +210,11 @@ def main():
     url = 'http://192.168.8.130:5000/'
 
     lc = LightController(url, 2)
-    lc()
+    # lc()
 
-    # while True:
-    #     lc()
-    #     utime.sleep(1)
+    while True:
+        lc()
+        utime.sleep(1)
 
 
 # main()
