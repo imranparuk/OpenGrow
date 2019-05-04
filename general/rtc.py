@@ -18,7 +18,7 @@ class Rtc(object):
     @staticmethod
     def get_datetime_normilized_time(datetime):
         #(year, month, day, weekday, hours, minutes, seconds, subseconds)
-        return (datetime[4], datetime[5], datetime[6], datetime[7])
+        return (0, datetime[4], datetime[5], datetime[6], datetime[7])
 
     @staticmethod
     def get_time_int(time):

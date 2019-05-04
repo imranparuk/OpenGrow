@@ -92,6 +92,7 @@ class LightController(object):
             print("Relay State: {}".format(res))
         elif b'0' in self.db.keys():
             data = self.db_load()
+            print(data)
             _cycle = b'0' if 'to' not in data[b'0'] else self.get_current_cycle(data)
             state = False
             if _cycle is not None:
@@ -100,6 +101,7 @@ class LightController(object):
             print("Relay State: {}".format(res))
 
     def process_cycle(self, data, cycle):
+
         _data = data[cycle]['times']
         _from = self.rtc.get_datetime_normilized_time(
             self.rtc.ntp_time_to_local(_data['from'])
@@ -108,16 +110,14 @@ class LightController(object):
             self.rtc.get_datetime()
         )
         hours = _data['hours']
-        to_hours = _from[0]+hours
-        to_hours = to_hours if not to_hours > 24 else to_hours - 24
-        _to = (to_hours, _from[1], _from[2], 0)
+        to_hours = _from[1]+hours
+        to_days = 0
 
-        print(self.compare_times(self.rtc.get_time_int(_from), self.rtc.get_time_int(_now)))
-        print(self.compare_times(self.rtc.get_time_int(_now), self.rtc.get_time_int(_to)))
+        if to_hours > 24:
+            to_days = 1
+            to_hours = to_hours - 24
 
-        if self.compare_times(self.rtc.get_time_int(_from), self.rtc.get_time_int(_now)) and \
-           self.compare_times(self.rtc.get_time_int(_now), self.rtc.get_time_int(_to)):
-            return b'1'
+        _to = (to_days, to_hours, _from[2], _from[3], 0)
 
         # print(_from)
         # print(_now)
@@ -126,17 +126,9 @@ class LightController(object):
         # print(self.rtc.get_time_int(_now))
         # print(self.rtc.get_time_int(_to))
 
+        if _from < _now < _to:
+            return b'1'
         return b'0'
-
-    def compare_times(self, timea, timeb):
-        _t_const = self.rtc.get_time_int([12, 0, 0])
-
-        if timea > _t_const > timeb:
-            return True
-        else:
-            if timea < timeb:
-                return True
-        return False
 
     def get_current_cycle(self, data):
         _now = self.rtc.get_datetime_normilized_date(self.rtc.get_datetime())
