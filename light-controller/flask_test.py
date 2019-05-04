@@ -4,7 +4,7 @@ import datetime
 app = Flask(__name__)
 
 forced_state_light = 0
-time_list_light = [datetime.datetime(2019, 4, 28, 2, 12, 14, 16), 4]
+time_list_light = [datetime.datetime(2019, 4, 28, 18, 12, 14, 16), 4]
 complete_list_light = [
     [datetime.datetime(2019, 1, 28, 14, 22), datetime.datetime(2019, 1, 27, 14, 22),
      datetime.datetime(2019, 4, 28, 14, 22), datetime.datetime(2019, 4, 28, 17, 22)],
@@ -60,8 +60,8 @@ def resp_complete_light(datetimes):
 
 @app.route("/")
 def home():
-    # ret = resp_force_light(0)
-    ret = resp_force_time_light(time_list_light)
+    ret = resp_force_light(0)
+    # ret = resp_force_time_light(time_list_light)
     # ret = resp_complete_light(complete_list_light)
 
     return jsonify(ret)

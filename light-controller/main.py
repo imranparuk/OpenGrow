@@ -1,26 +1,7 @@
-import btree
-import network
 import machine
-import utime
-import uos as os
-import ujson as json
-import urequests as requests
-import ustruct as struct
-import usocket as socket
 
 from rtc import Rtc
-
-def get_data(_url):
-    try:
-        r = requests.get(_url)
-        json_ret = r.json()
-        r.close()
-        return json_ret
-    except OSError:
-        print("OSError in request")
-        return None
-    except MemoryError:
-        pass
+from db import Db
 
 
 class LightController(object):
@@ -28,75 +9,33 @@ class LightController(object):
         self.url = url
         self.pin = machine.Pin(_pin, machine.Pin.OUT)
 
-        self.f = self.db_init(db_name)
-        self.db = btree.open(self.f)
-        self.db_delete()
+        self.db = Db(url, db_name)
+        self.data = None
 
         self.rtc = Rtc()
 
     def __call__(self, *args, **kwargs):
         self.rtc.set_time_network()
-        pdg = self.process_data_get()
+        pdg = self.db()
         print("Saved Db: {}".format(pdg))
         if pdg:
+            self.data = self.db.db_load()
             self.process_data_db()
         else:
             print("No Data, default to off mode")
             self.set_relay(b'0')
 
-    def __del__(self):
-        self.f.close()
-        self.db.close()
-
-    def db_print(self):
-        for key in self.db.keys():
-            print(key)
-
-    def db_delete(self):
-        for key in self.db.keys():
-            del self.db[key]
-
-    def db_save(self, data):
-        for key in data.keys():
-            self.db[key] = json.dumps(data[key])
-        self.db.flush()
-
-    def db_load(self):
-        ret_dict = {}
-        for key in self.db.keys():
-            ret_dict[key] = json.loads(self.db[key])
-        return ret_dict
-
-    @staticmethod
-    def db_init(dbname):
-        try:
-            f = open(dbname, "r+b")
-            print("db opened")
-        except OSError:
-            f = open(dbname, "w+b")
-            print("db created")
-        return f
-
-    def process_data_get(self):
-        data = get_data(self.url)
-        if data is not None:
-            self.db_save(data)
-            return True
-        return False
-
     def process_data_db(self):
-        if 'force' in self.db.keys():
-            state = self.db.get('force')
+        if b'force' in self.data.keys():
+            state = self.data[b'force']
             print("state: {}".format(state))
             res = self.set_relay(state)
             print("Relay State: {}".format(res))
-        elif b'0' in self.db.keys():
-            data = self.db_load()
-            print(data)
-            _cycle = b'0' if 'to' not in data[b'0'] else self.get_current_cycle(data)
+        elif b'0' in self.data.keys():
+            _cycle = b'0' if 'to' not in self.data[b'0'] else self.get_current_cycle(self.data)
             state = False
             if _cycle is not None:
-                state = self.process_cycle(data, _cycle)
+                state = self.process_cycle(self.data, _cycle)
             res = self.set_relay(state)
             print("Relay State: {}".format(res))
 
