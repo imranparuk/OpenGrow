@@ -4,7 +4,7 @@ import datetime
 app = Flask(__name__)
 
 forced_state_light = 0
-time_list_light = [datetime.datetime(2019, 4, 28, 14, 22), datetime.datetime(2019, 4, 28, 17, 22)]
+time_list_light = [datetime.datetime(2019, 4, 28, 2, 00, 00), 4]
 complete_list_light = [
     [datetime.datetime(2019, 1, 28, 14, 22), datetime.datetime(2019, 1, 27, 14, 22),
      datetime.datetime(2019, 4, 28, 14, 22), datetime.datetime(2019, 4, 28, 17, 22)],
@@ -32,12 +32,12 @@ def resp_force_light(state):
 
 
 def resp_force_time_light(times):
-    time_a, time_b = times
+    time, hours = times
     single_lifecycle = {
         "0": {
             "times": {
-                "from": time_to_ntp(time_a),
-                "to": time_to_ntp(time_b)
+                "from": time_to_ntp(time),
+                "hours": hours
             }
         }
     }
@@ -47,23 +47,22 @@ def resp_force_time_light(times):
 def resp_complete_light(datetimes):
     ret_dict = {}
     for i, _datetime in enumerate(datetimes):
-        date_a, date_b, time_a, time_b = _datetime
+        date_a, date_b, time, hours = _datetime
         ret_dict[str(i)] = {
             "from": time_to_ntp(date_a),
             "to": time_to_ntp(date_b),
             "times": {
-                "from": time_to_ntp(time_a),
-                "to": time_to_ntp(time_b)
+                "from": time_to_ntp(time),
+                "hours": hours
             }
         }
     return ret_dict
 
-
 @app.route("/")
 def home():
     # ret = resp_force_light(0)
-    # ret = resp_force_time(time_list)
-    ret = resp_complete_light(complete_list_light)
+    ret = resp_force_time_light(time_list_light)
+    # ret = resp_complete_light(complete_list_light)
 
     return jsonify(ret)
 

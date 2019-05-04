@@ -9,21 +9,38 @@ class Rtc(object):
         # (date(2000, 1, 1) - date(1900, 1, 1)).days * 24*60*60
         self.NTP_DELTA = 3155673600
         self.host = "time.nmisa.org" #"pool.ntp.org"
-        self.rtc = machine.RTC()
+        self._rtc = machine.RTC()
 
     def get_datetime(self):
         #  (year, month, day, weekday, hours, minutes, seconds, subseconds)
-        return self.rtc.datetime()
+        return self._rtc.datetime()
 
     @staticmethod
     def get_datetime_normilized_time(datetime):
         #(year, month, day, weekday, hours, minutes, seconds, subseconds)
-        return (0, 0, 0, 0, datetime[4], datetime[5], datetime[6], datetime[7])
+        return (datetime[4], datetime[5], datetime[6], datetime[7])
+
+    @staticmethod
+    def get_time_int(time):
+        # hours, minutes, seconds, subseconds
+        # excludes milliseconds
+        return time[0]*60*60*24 + time[1]*60*60 + time[2]*60 + time[3]
+
+    @staticmethod
+    def get_date_int(date):
+        # year, month, day
+        # assumes there will only be 10k years, idk python wont be around by then, but i surely wont
+
+        a = int((14 - date[1]) / 12)
+        y = date[0] + 4800 - a
+        m = date[1] + 12 * a - 3
+        return date[2] + (153 * m + 2) / 5 + 365 * y + y / 4 - y / 100 + y / 400 - 32045
+        # return date[0]*10000 + date[1]*100 + date[2]
 
     @staticmethod
     def get_datetime_normilized_date(datetime):
         #(year, month, day, weekday, hours, minutes, seconds, subseconds)
-        return (datetime[0], datetime[1], datetime[2], datetime[3], 0, 0, 0, 0)
+        return (datetime[0], datetime[1], datetime[2])
 
     def get_NTP_time(self):
         NTP_QUERY = bytearray(48)

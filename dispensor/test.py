@@ -47,27 +47,35 @@ import uasyncio as asyncio
 #
 # print("test")
 # print(machine.unique_id())
+#
+# ota_url = 'http://192.168.8.130:5000/download/'
+# v_url = 'http://192.168.8.130:5000/version/'
+#
+# from utils import do_connect_network
+#
+#
+# def get_version_online( url):
+#
+#     _data = {
+#         "device_id": [i for i in machine.unique_id()],
+#         "type": "abv"
+#     }
+#     print('getting version online')
+#     try:
+#         response = requests.post(url, json=_data)
+#         data = response.json()
+#         version = data['version']
+#         print(version)
+#     except OSError:
+#         return None
+#
+# do_connect_network()
+# get_version_online(v_url)
 
-ota_url = 'http://192.168.8.130:5000/download/'
-v_url = 'http://192.168.8.130:5000/version/'
+# import upip
+#
+# upip.install("micropython-datetime")
 
-from utils import do_connect_network
+import datetime
 
-
-def get_version_online( url):
-
-    _data = {
-        "device_id": [i for i in machine.unique_id()],
-        "type": "abv"
-    }
-    print('getting version online')
-    try:
-        response = requests.post(url, json=_data)
-        data = response.json()
-        version = data['version']
-        print(version)
-    except OSError:
-        return None
-
-do_connect_network()
-get_version_online(v_url)
+a = datetime.datetime()

@@ -22,6 +22,7 @@ def get_data(_url):
     except MemoryError:
         pass
 
+
 class LightController(object):
     def __init__(self, url, _pin, db_name='light_c'):
         self.url = url
@@ -91,36 +92,51 @@ class LightController(object):
             print("Relay State: {}".format(res))
         elif b'0' in self.db.keys():
             data = self.db_load()
-            if 'to' not in data[b'0']:
-                self.process_cycle(data, b'0')
-            else:
-                _cycle = self.get_current_cycle(data)
-                state = False
-                if _cycle is not None:
-                    state = self.process_cycle(data, _cycle)
-
-                res = self.set_relay(state)
-                print("Relay State: {}".format(res))
+            _cycle = b'0' if 'to' not in data[b'0'] else self.get_current_cycle(data)
+            state = False
+            if _cycle is not None:
+                state = self.process_cycle(data, _cycle)
+            res = self.set_relay(state)
+            print("Relay State: {}".format(res))
 
     def process_cycle(self, data, cycle):
         _data = data[cycle]['times']
-        _to = self.rtc.get_datetime_normilized_time(
-            self.rtc.ntp_time_to_local(_data['to'])
-        )
         _from = self.rtc.get_datetime_normilized_time(
             self.rtc.ntp_time_to_local(_data['from'])
         )
         _now = self.rtc.get_datetime_normilized_time(
             self.rtc.get_datetime()
         )
-        print(_from)
-        print(_now)
-        print(_to)
+        hours = _data['hours']
+        to_hours = _from[0]+hours
+        to_hours = to_hours if not to_hours > 24 else to_hours - 24
+        _to = (to_hours, _from[1], _from[2], 0)
 
-        print(_now < _to)
-        if _from < _now < _to:
+        print(self.compare_times(self.rtc.get_time_int(_from), self.rtc.get_time_int(_now)))
+        print(self.compare_times(self.rtc.get_time_int(_now), self.rtc.get_time_int(_to)))
+
+        if self.compare_times(self.rtc.get_time_int(_from), self.rtc.get_time_int(_now)) and \
+           self.compare_times(self.rtc.get_time_int(_now), self.rtc.get_time_int(_to)):
             return b'1'
+
+        # print(_from)
+        # print(_now)
+        # print(_to)
+        # print(self.rtc.get_time_int(_from))
+        # print(self.rtc.get_time_int(_now))
+        # print(self.rtc.get_time_int(_to))
+
         return b'0'
+
+    def compare_times(self, timea, timeb):
+        _t_const = self.rtc.get_time_int([12, 0, 0])
+
+        if timea > _t_const > timeb:
+            return True
+        else:
+            if timea < timeb:
+                return True
+        return False
 
     def get_current_cycle(self, data):
         _now = self.rtc.get_datetime_normilized_date(self.rtc.get_datetime())
@@ -133,7 +149,11 @@ class LightController(object):
             _to = self.rtc.get_datetime_normilized_date(
                 self.rtc.ntp_time_to_local(val['to'])
             )
-            if _from < _now < _to:
+            _from_int = self.rtc.get_date_int(_from)
+            _to_int = self.rtc.get_date_int(_to)
+            _now_int = self.rtc.get_date_int(_now)
+
+            if _from_int < _now_int < _to_int:
                 _cycle = i
         return _cycle
 

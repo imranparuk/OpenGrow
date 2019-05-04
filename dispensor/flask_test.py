@@ -3,17 +3,20 @@ import datetime
 
 app = Flask(__name__)
 
-forced_state_light = 0
-time_list_light = [datetime.datetime(2019, 4, 28, 14, 22), datetime.datetime(2019, 4, 28, 17, 22)]
-complete_list_light = [
+forced_state_disp = [15, 20, 10, 2000]
+time_list_disp = [datetime.datetime(2019, 4, 28, 14, 22), forced_state_disp]
+complete_list_disp = [
     [datetime.datetime(2019, 1, 28, 14, 22), datetime.datetime(2019, 1, 27, 14, 22),
-     datetime.datetime(2019, 4, 28, 14, 22), datetime.datetime(2019, 4, 28, 17, 22)],
+     datetime.datetime(2019, 4, 28, 17, 22),
+     1],
 
     [datetime.datetime(2019, 4, 28, 14, 22), datetime.datetime(2019, 4, 27, 14, 22),
-     datetime.datetime(2019, 4, 28, 14, 22), datetime.datetime(2019, 4, 28, 17, 22)],
+     datetime.datetime(2019, 4, 28, 14, 22),
+     1],
 
-    [datetime.datetime(2019, 5, 1, 2, 0), datetime.datetime(2019, 5, 29, 2, 0),
-     datetime.datetime(2019, 1, 1, 00, 00), datetime.datetime(2019, 1, 1, 1, 59)]
+    [datetime.datetime(2019, 4, 26, 14, 22), datetime.datetime(2019, 4, 29, 14, 22),
+     datetime.datetime(2019, 4, 28, 14, 22),
+     3]
 ]
 
 def time_to_ntp(date):
@@ -32,12 +35,12 @@ def resp_force_light(state):
 
 
 def resp_force_time_light(times):
-    time_a, time_b = times
+    time, hours = times
     single_lifecycle = {
         "0": {
             "times": {
-                "from": time_to_ntp(time_a),
-                "to": time_to_ntp(time_b)
+                "from": time_to_ntp(time),
+                "hours": hours
             }
         }
     }
@@ -47,13 +50,13 @@ def resp_force_time_light(times):
 def resp_complete_light(datetimes):
     ret_dict = {}
     for i, _datetime in enumerate(datetimes):
-        date_a, date_b, time_a, time_b = _datetime
+        date_a, date_b, time, hours = _datetime
         ret_dict[str(i)] = {
             "from": time_to_ntp(date_a),
             "to": time_to_ntp(date_b),
             "times": {
-                "from": time_to_ntp(time_a),
-                "to": time_to_ntp(time_b)
+                "from": time_to_ntp(time),
+                "hours": hours
             }
         }
     return ret_dict
