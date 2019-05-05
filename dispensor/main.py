@@ -1,112 +1,64 @@
-import btree
-import network
-import machine
 import utime
-import uos as os
 import ujson as json
-import urequests as requests
-import ustruct as struct
-import usocket as socket
+
+import machine
 
 from rtc import Rtc
+from db import Db
+
 LED_PIN = 2
 
-def get_data(_url):
-    try:
-        r = requests.get(_url)
-        json_ret = r.json()
-        r.close()
-        return json_ret
-    except OSError:
-        print("OSError in request")
-        return None
-    except MemoryError:
-        pass
 
 class Dispensor(object):
     def __init__(self, url, db_name='dispensor'):
         self.url = url
         self.led_pin = machine.Pin(LED_PIN, machine.Pin.OUT)
 
-        self.f = self.db_init(db_name)
-        self.db = btree.open(self.f)
-        self.db_delete()
+        self.db = Db(url, db_name)
+        self.data = None
 
         self.rtc = Rtc()
+        self.url = url
 
-        self.key_to_pin = {
-            "nutesA": 2,
-            "nutesB": 4,
-            "nutesC": 5,
-            "water": 12,
-            "out": 14,
-            "waterLevel": 16
+        self.keys_to_pins = {
+            "nutes": {
+                "nutesA": 2,
+                "nutesB": 4,
+                "nutesC": 5,
+            },
+            "inOut": {
+                "waterIn": 12,
+                "out": 14
+            },
+            "waterLevel": 16,
+            "mixer": None,
         }
+
 
     def __call__(self, *args, **kwargs):
         self.rtc.set_time_network()
-        pdg = self.process_data_get()
+        pdg = self.db()
         print("Saved Db: {}".format(pdg))
         if pdg:
-            self.process_data_db()
+            self.data = self.db.db_load()
+            if self.data is not None:
+                self.process_data_db()
+            else:
+                print("No Data")
         else:
-            print("No Data")
+            print("No Data, default to off mode")
 
-    def __del__(self):
-        self.f.close()
-        self.db.close()
-
-    def db_print(self):
-        for key in self.db.keys():
-            print(key)
-
-    def db_delete(self):
-        for key in self.db.keys():
-            del self.db[key]
-
-    def db_save(self, data):
-        for key in data.keys():
-            self.db[key] = json.dumps(data[key])
-        self.db.flush()
-
-    def db_load(self):
-        ret_dict = {}
-        for key in self.db.keys():
-            ret_dict[key] = json.loads(self.db[key])
-        return ret_dict
-
-    @staticmethod
-    def db_init(dbname):
-        try:
-            f = open(dbname, "r+b")
-            print("db opened")
-        except OSError:
-            f = open(dbname, "w+b")
-            print("db created")
-        return f
-
-    def process_data_get(self):
-        data = get_data(self.url)
-        if data is not None:
-            self.db_save(data)
-            return True
-        return False
 
     def process_data_db(self):
-        if 'force' in self.db.keys():
-            # state = self.db.get('force')
-            # print("state: {}".format(state))
-            # res = self.set_relay(state)
-            # print("Relay State: {}".format(res))
+        if b'force' in self.data.keys():
+            state = self.data[b'force']
             pass
-        elif b'0' in self.db.keys():
-            self.process_cycle()
 
-    def process_cycle(self):
-        data = self.db_load()
-        _cycle = b'0' if 'dates' not in data[b'0'] else self.get_current_cycle(data)
-        if _cycle is not None:
-            self.process_cycle_times(data, _cycle)
+        elif b'0' in self.data.keys():
+            _cycle = b'0' if 'to' not in self.data[b'0'] else self.rtc.get_current_cycle(self.data)
+            state = False
+            if _cycle is not None:
+                state = self.process_cycle_times(self.data, _cycle)
 
     def process_cycle_times(self, data, cycle):
         _time = data[cycle]['time']
@@ -125,33 +77,6 @@ class Dispensor(object):
                 self.dispense(_data)
                 self.set_dispensed_today()
 
-    def get_current_cycle(self, data):
-        _now = self.rtc.get_datetime_normilized_date(self.rtc.get_datetime())
-        _cycle = None
-        for key in sorted(data.keys()):
-            i, val = key, data[key]
-            _from = self.rtc.get_datetime_normilized_date(
-                self.rtc.ntp_time_to_local(val['dates']['from'])
-            )
-            _to = self.rtc.get_datetime_normilized_date(
-                self.rtc.ntp_time_to_local(val['dates']['to'])
-            )
-            _days = val['dates']['days']
-            if _from < _now < _to:
-                if self.process_cycle_dates(_from, _now, _days):
-                    _cycle = i
-        return _cycle
-
-    def process_cycle_dates(self, _from, _now, _days):
-        _from_day = _from[2]
-        _now_day = _from[2]
-        _diff = _now_day - _from_day
-        if _diff == 0:
-            return True
-        if _diff % _days:
-            return True
-        return False
-
     def get_dispensed_today(self, date):
         if b'date' not in self.db.keys():
             return False
@@ -167,15 +92,20 @@ class Dispensor(object):
 
     def dispense(self, data):
         nutes = data['nutes']
-        water = data['water']
+        water_in = data['inOut']['waterIn']
+
+
+        _water_in_pin = machine.Pin(self.keys_to_pins['inOut']['waterIn'], machine.Pin.IN)
+        _water_in_pin = machine.Pin(self.keys_to_pins['inOut']['waterIn'], machine.Pin.OUT)
 
         for key, dispense_val in nutes.items():
-            _temp = machine.Pin(self.key_to_pin[key], machine.Pin.OUT)
-            self.dispense_pin(_temp, dispense_val)
+            _temp = machine.Pin(self.keys_to_pins['nutes'][key], machine.Pin.OUT)
+            self.dispense_on_pin(_temp, dispense_val)
 
 
 
-    def dispense_pin(self, pin, ml):
+
+    def dispense_on_pin(self, pin, ml):
         pin.on()
         utime.sleep(ml*0.001)
         pin.off()

@@ -6,14 +6,14 @@ app = Flask(__name__)
 forced_state_light = 0
 time_list_light = [datetime.datetime(2019, 4, 28, 18, 12, 14, 16), 4]
 complete_list_light = [
-    [datetime.datetime(2019, 1, 28, 14, 22), datetime.datetime(2019, 1, 27, 14, 22),
-     datetime.datetime(2019, 4, 28, 14, 22), datetime.datetime(2019, 4, 28, 17, 22)],
+    [datetime.datetime(2019, 1, 28, 14, 22), datetime.datetime(2019, 1, 27, 14, 22), 4,
+     datetime.datetime(2019, 4, 28, 14, 22), 12],
 
-    [datetime.datetime(2019, 4, 28, 14, 22), datetime.datetime(2019, 4, 27, 14, 22),
-     datetime.datetime(2019, 4, 28, 14, 22), datetime.datetime(2019, 4, 28, 17, 22)],
+    [datetime.datetime(2019, 4, 28, 14, 22), datetime.datetime(2019, 4, 27, 14, 22), 2,
+     datetime.datetime(2019, 4, 28, 14, 22), 14],
 
-    [datetime.datetime(2019, 5, 1, 2, 0), datetime.datetime(2019, 5, 29, 2, 0),
-     datetime.datetime(2019, 1, 1, 00, 00), datetime.datetime(2019, 1, 1, 1, 59)]
+    [datetime.datetime(2019, 5, 1, 2, 0), datetime.datetime(2019, 5, 29, 2, 0), 1,
+     datetime.datetime(2019, 1, 1, 19, 00), 5]
 ]
 
 def time_to_ntp(date):
@@ -47,10 +47,11 @@ def resp_force_time_light(times):
 def resp_complete_light(datetimes):
     ret_dict = {}
     for i, _datetime in enumerate(datetimes):
-        date_a, date_b, time, hours = _datetime
+        date_a, date_b, days, time, hours = _datetime
         ret_dict[str(i)] = {
             "from": time_to_ntp(date_a),
             "to": time_to_ntp(date_b),
+            "days": days,
             "times": {
                 "from": time_to_ntp(time),
                 "hours": hours
@@ -60,9 +61,9 @@ def resp_complete_light(datetimes):
 
 @app.route("/")
 def home():
-    ret = resp_force_light(0)
+    # ret = resp_force_light(0)
     # ret = resp_force_time_light(time_list_light)
-    # ret = resp_complete_light(complete_list_light)
+    ret = resp_complete_light(complete_list_light)
 
     return jsonify(ret)
 

@@ -20,7 +20,10 @@ class LightController(object):
         print("Saved Db: {}".format(pdg))
         if pdg:
             self.data = self.db.db_load()
-            self.process_data_db()
+            if self.data is not None:
+                self.process_data_db()
+            else:
+                print("No Data")
         else:
             print("No Data, default to off mode")
             self.set_relay(b'0')
@@ -32,14 +35,14 @@ class LightController(object):
             res = self.set_relay(state)
             print("Relay State: {}".format(res))
         elif b'0' in self.data.keys():
-            _cycle = b'0' if 'to' not in self.data[b'0'] else self.get_current_cycle(self.data)
+            _cycle = b'0' if 'to' not in self.data[b'0'] else self.rtc.get_current_cycle(self.data)
             state = False
             if _cycle is not None:
-                state = self.process_cycle(self.data, _cycle)
+                state = self.process_cycle_times(self.data, _cycle)
             res = self.set_relay(state)
             print("Relay State: {}".format(res))
 
-    def process_cycle(self, data, cycle):
+    def process_cycle_times(self, data, cycle):
 
         _data = data[cycle]['times']
         _from = self.rtc.get_datetime_normilized_time(
@@ -68,25 +71,6 @@ class LightController(object):
         if _from < _now < _to:
             return b'1'
         return b'0'
-
-    def get_current_cycle(self, data):
-        _now = self.rtc.get_datetime_normilized_date(self.rtc.get_datetime())
-        _cycle = None
-        for key in sorted(data.keys()):
-            i, val = key, data[key]
-            _from = self.rtc.get_datetime_normilized_date(
-                self.rtc.ntp_time_to_local(val['from'])
-            )
-            _to = self.rtc.get_datetime_normilized_date(
-                self.rtc.ntp_time_to_local(val['to'])
-            )
-            _from_int = self.rtc.get_date_int(_from)
-            _to_int = self.rtc.get_date_int(_to)
-            _now_int = self.rtc.get_date_int(_now)
-
-            if _from_int < _now_int < _to_int:
-                _cycle = i
-        return _cycle
 
     def set_relay(self, _state):
         if _state is True or _state == b'1' or _state == 1:

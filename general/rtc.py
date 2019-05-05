@@ -42,6 +42,37 @@ class Rtc(object):
         #(year, month, day, weekday, hours, minutes, seconds, subseconds)
         return (datetime[0], datetime[1], datetime[2])
 
+    def get_current_cycle(self, data):
+        _now = self.get_datetime_normilized_date(self.get_datetime())
+        _cycle = None
+        for key in sorted(data.keys()):
+            i, val = key, data[key]
+            _from = self.get_datetime_normilized_date(
+                self.ntp_time_to_local(val['from'])
+            )
+            _to = self.get_datetime_normilized_date(
+                self.ntp_time_to_local(val['to'])
+            )
+            _from_int = self.get_date_int(_from)
+            _to_int = self.get_date_int(_to)
+            _now_int = self.get_date_int(_now)
+            _days = val['days']
+            if _from_int < _now_int < _to_int:
+                if self.process_cycle_dates(_from, _now, _days):
+                    _cycle = i
+        return _cycle
+
+    @staticmethod
+    def process_cycle_dates(_from, _now, _days):
+        _from_day = _from[2]
+        _now_day = _from[2]
+        _diff = _now_day - _from_day
+        if _diff == 0:
+            return True
+        if _diff % _days:
+            return True
+        return False
+
     def get_NTP_time(self):
         NTP_QUERY = bytearray(48)
         NTP_QUERY[0] = 0x1b

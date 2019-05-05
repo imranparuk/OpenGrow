@@ -1,18 +1,9 @@
 import urequests as requests
 import btree
 import ujson as json
+from utils import get_data
 
-def get_data(_url):
-    try:
-        r = requests.get(_url)
-        json_ret = r.json()
-        r.close()
-        return json_ret
-    except OSError:
-        print("OSError in request")
-        return None
-    except MemoryError:
-        pass
+
 
 class Db(object):
     def __init__(self, url, db_name="default_db"):

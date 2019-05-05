@@ -1,6 +1,7 @@
 import ujson as json
 import network
 import machine
+import urequests as requests
 
 CONFIG_FILE = "/config.json"
 
@@ -43,3 +44,15 @@ def write_json_file(filename, data):
     except OSError:
         print("OSError in Json file, file may not exist")
         return False
+
+def get_data(_url):
+    try:
+        r = requests.get(_url)
+        json_ret = r.json()
+        r.close()
+        return json_ret
+    except OSError:
+        print("OSError in request")
+        return None
+    except MemoryError:
+        pass
