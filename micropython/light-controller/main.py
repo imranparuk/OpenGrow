@@ -1,6 +1,7 @@
 import machine
+import utime
 
-from rtc import Rtc
+from rtc import TimeUtils
 from db import Db
 
 
@@ -12,10 +13,10 @@ class LightController(object):
         self.db = Db(url, db_name)
         self.data = None
 
-        self.rtc = Rtc()
+        self.rtc = TimeUtils()
+        self.rtc.set_time_network()
 
     def __call__(self, *args, **kwargs):
-        self.rtc.set_time_network()
         pdg = self.db()
         print("Saved Db: {}".format(pdg))
         if pdg:
@@ -51,15 +52,21 @@ class LightController(object):
         _now = self.rtc.get_datetime_normilized_time(
             self.rtc.get_datetime()
         )
+
         hours = _data['hours']
         to_hours = _from[1]+hours
         to_days = 0
 
-        if to_hours > 24:
+        print("from: ", _from)
+        print("hours: ", hours)
+
+        if to_hours >= 24:
             to_days = 1
             to_hours = to_hours - 24
 
         _to = (to_days, to_hours, _from[2], _from[3], 0)
+
+        print("to: ", _to)
 
         # print(_from)
         # print(_now)
@@ -96,13 +103,13 @@ def main():
     # v_url = 'http://192.168.8.130:5000/version/'
     # o = OTA(ota_url, v_url)
 
-    url = 'http://192.168.8.130:5000/'
+    url = 'http://192.168.8.161:5000/'
     lc = LightController(url, 2)
-    lc()
+    # lc()
     #
-    # while True:
-    #     lc()
-    #     utime.sleep(1)
+    while True:
+        lc()
+        utime.sleep(1)
 
 main()
 

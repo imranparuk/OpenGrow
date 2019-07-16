@@ -1,23 +1,24 @@
 import urequests as requests
 import btree
 import ujson as json
-from utils import get_device_id_list
+from utils import get_data
+
 
 
 class Db(object):
     def __init__(self, url, db_name="default_db"):
         self.url = url
-        self.device = get_device_id_list()
+
         self.f = self.db_init(db_name)
         self.db = btree.open(self.f)
+        self.db_delete()
 
     def __del__(self):
         self.f.close()
         self.db.close()
 
     def __call__(self, *args, **kwargs):
-        self.process_data_get()
-        return len([self.db.keys()]) > 0
+        return self.process_data_get()
 
     @staticmethod
     def db_init(dbname):
@@ -49,23 +50,8 @@ class Db(object):
         return ret_dict
 
     def process_data_get(self):
-        json_payload = {
-            "deviceId": self.device,
-            "$OPTION": [
-                "$GET_DATA"
-            ]
-        }
-        try:
-            ret = False
-            r = requests.get(self.url, json=json_payload)
-            data = r.json()
-            if data is not None:
-                self.db_delete()
-                self.db_save(data["data"])
-                ret = True
-            r.close()
-            return ret
-        except OSError:
-            print("OSError in request")
-        except MemoryError:
-            print("MemoryError in request")
+        data = get_data(self.url)
+        if data is not None:
+            self.db_save(data)
+            return True
+        return False

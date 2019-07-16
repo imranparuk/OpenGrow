@@ -19,6 +19,18 @@ complete_list_disp = [
      3]
 ]
 
+keys_to_pins = {
+    "nutes": {
+        "nutesA": 2,
+        "nutesB": 4,
+        "nutesC": 5,
+    },
+    "in": 12,
+    "out": 14,
+    "sensor": -16,
+    "mixer": 13,
+}
+
 def time_to_ntp(date):
     ntp_const = datetime.datetime(2000, 1, 1, 2, 0)
     # ntp_const = datetime.datetime(2000, 1, 1, 0, 0, 0)
@@ -66,9 +78,9 @@ def resp_complete_light(datetimes):
 def home():
     # ret = resp_force_light(0)
     # ret = resp_force_time(time_list)
-    ret = resp_complete_light(complete_list_light)
+    # ret = resp_complete_light(complete_list_light)
 
-    return jsonify(ret)
+    return jsonify(keys_to_pins)
 
 @app.route("/version/", methods=['GET', 'POST'])
 def version():

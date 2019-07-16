@@ -1,11 +1,11 @@
-from ota import OTA
 from utils import do_connect_network
 
-ota_url = 'http://192.168.8.130:5000/download/'
-v_url = 'http://192.168.8.130:5000/version/'
+url = 'http://192.168.8.161:5000/'
 type = "light_controller"
 
 do_connect_network()
-# o = OTA(ota_url, v_url, type)
 
-# import main
+# from ota import OTA
+# o = OTA(url, type)
+
+import main

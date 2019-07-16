@@ -4,7 +4,7 @@ import datetime
 app = Flask(__name__)
 
 forced_state_light = 0
-time_list_light = [datetime.datetime(2019, 4, 28, 18, 12, 14, 16), 4]
+time_list_light = [datetime.datetime(2019, 4, 25, 0, 0), 12]
 complete_list_light = [
     [datetime.datetime(2019, 1, 28, 14, 22), datetime.datetime(2019, 1, 27, 14, 22), 4,
      datetime.datetime(2019, 4, 28, 14, 22), 12],
@@ -59,25 +59,47 @@ def resp_complete_light(datetimes):
         }
     return ret_dict
 
-@app.route("/")
+@app.route("/", methods=['GET', 'POST'])
 def home():
-    # ret = resp_force_light(0)
-    # ret = resp_force_time_light(time_list_light)
-    ret = resp_complete_light(complete_list_light)
+    req = request.get_json()
+    resp = {}
 
-    return jsonify(ret)
+    if "$OPTION" in req.keys():
+        options = req["$OPTION"]
+        if "$GET_VERSION" in options:
+            resp['version'] = "0.0.0"
+        if "$GET_FILES" in options:
+            import os
+            files_ = os.listdir('/home/imran/Documents/personal/projects/OpenGrow/server/OTA/light_controller')
+            resp['files'] = files_
+            print(files_)
+            resp['filesUrl'] = 'http://192.168.8.130:5000'
+            print("get files")
 
-@app.route("/version/", methods=['GET', 'POST'])
-def version():
-    print(request.get_json())
-    ret = {
-        "version": "0.0.0"
-    }
-    return jsonify(ret)
+        if "$DOWNLOAD_FILE" in options:
+            file = options['$DOWNLOAD_FILE']
+            send_file('/home/imran/Documents/personal/projects/OpenGrow/server/OTA/{}'.format(file),
+                      attachment_filename=file)
+        if "$GET_DATA" in options:
+            # ret = resp_force_light(1)
+            ret = resp_force_time_light(time_list_light)
+            # ret = resp_complete_light(complete_list_light)
+            resp["data"] = ret
+            print("herehere")
 
-@app.route('/download/<path:filename>', methods=['GET', 'POST'])
-def download(filename):
-    return send_file('/home/imran/Documents/personal/projects/OpenGrow/server/OTA/{}'.format(filename), attachment_filename=filename)
+    return jsonify(resp)
+
+# @app.route('/download/<path:filename>', methods=['GET', 'POST'])
+# def download(filename):
+#     return
+
+# @app.route("/version/", methods=['GET', 'POST'])
+# def version():
+#     print(request.get_json())
+#     ret = {
+#         "version": "0.0.0"
+#     }
+#     return jsonify(ret)
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0')

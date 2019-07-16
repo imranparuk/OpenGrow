@@ -1,10 +1,12 @@
 import utime
 import ujson as json
-
+import urequests as requests
 import machine
 
 from rtc import Rtc
 from db import Db
+
+from utils import get_device_id_list
 
 LED_PIN = 2
 
@@ -13,27 +15,15 @@ class Dispensor(object):
     def __init__(self, url, db_name='dispensor'):
         self.url = url
         self.led_pin = machine.Pin(LED_PIN, machine.Pin.OUT)
+        self.device = get_device_id_list()
 
         self.db = Db(url, db_name)
         self.data = None
 
         self.rtc = Rtc()
-        self.url = url
 
-        self.keys_to_pins = {
-            "nutes": {
-                "nutesA": 2,
-                "nutesB": 4,
-                "nutesC": 5,
-            },
-            "inOut": {
-                "waterIn": 12,
-                "out": 14
-            },
-            "waterLevel": 16,
-            "mixer": None,
-        }
-
+        self._keys_to_pins = self.get_keys_to_pins(self.url)
+        self.pins = self.keys_to_pins(self._keys_to_pins)
 
     def __call__(self, *args, **kwargs):
         self.rtc.set_time_network()
@@ -48,6 +38,30 @@ class Dispensor(object):
         else:
             print("No Data, default to off mode")
 
+    def get_keys_to_pins(self, url):
+        json_payload = {
+            "deviceId": self.device,
+            "$OPTION": ["$GET_KEYS_TO_PINS"]
+        }
+        try:
+            response = requests.post(url, json=json_payload)
+            data = response.json()
+            resp = data['pins']
+            response.close()
+            return resp
+        except OSError:
+            print("OS")
+            return None
+
+    def keys_to_pins(self, k_2_p):
+        ret = {}
+        for key, val in k_2_p.items():
+            if type(val) == dict:
+                _val = self.keys_to_pins(val)
+            else:
+                _val = machine.Pin(val if val > 0 else -val, machine.Pin.OUT if val > 0 else machine.Pin.IN)
+            ret[key] = _val
+        return ret
 
     def process_data_db(self):
         if b'force' in self.data.keys():
@@ -56,9 +70,8 @@ class Dispensor(object):
 
         elif b'0' in self.data.keys():
             _cycle = b'0' if 'to' not in self.data[b'0'] else self.rtc.get_current_cycle(self.data)
-            state = False
             if _cycle is not None:
-                state = self.process_cycle_times(self.data, _cycle)
+                self.process_cycle_times(self.data, _cycle)
 
     def process_cycle_times(self, data, cycle):
         _time = data[cycle]['time']
@@ -91,19 +104,24 @@ class Dispensor(object):
         self.db.flush()
 
     def dispense(self, data):
-        nutes = data['nutes']
-        water_in = data['inOut']['waterIn']
+        _nutes = data['nutes']
+        _in = data['in']
+        _total_out = _in
 
+        self.pins['mixer'].value(1)
 
-        _water_in_pin = machine.Pin(self.keys_to_pins['inOut']['waterIn'], machine.Pin.IN)
-        _water_in_pin = machine.Pin(self.keys_to_pins['inOut']['waterIn'], machine.Pin.OUT)
+        for key, dispense_val in _nutes.items():
+            self.dispense_on_pin(self.pins['nutes'][key], dispense_val)
+            _total_out += dispense_val
 
-        for key, dispense_val in nutes.items():
-            _temp = machine.Pin(self.keys_to_pins['nutes'][key], machine.Pin.OUT)
-            self.dispense_on_pin(_temp, dispense_val)
+        while self.pins['sensor'].value() is not 1:
+            self.dispense_on_pin(self.pins['in'], 10)
+            # utime.sleep(0.001)
 
+        #PH STUFF?
 
-
+        self.dispense_on_pin(self.pins['out'], _total_out)
+        self.pins['mixer'].value(1)
 
     def dispense_on_pin(self, pin, ml):
         pin.on()
@@ -114,10 +132,6 @@ class Dispensor(object):
 # from ota import OTA
 def main():
     url = 'http://192.168.8.130:5000/'
-    # ota_url = 'http://192.168.8.130:5000/download/'
-    # v_url = 'http://192.168.8.130:5000/version/'
-    #
-    # o = OTA(ota_url, v_url)
 
     lc = Dispensor(url)
     lc()

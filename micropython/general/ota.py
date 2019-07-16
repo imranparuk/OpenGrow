@@ -3,44 +3,30 @@ import gc
 import machine
 import urequests as requests
 
-from utils import read_json_file, write_json_file, get_device_json
+from utils import read_json_file, write_json_file, get_device_id_list
 
 SRC_FILENAME = 'main.py'
 VERSION_FILENAME = 'config.json'
+NEW_SRC = 'new'
 
 class OTA(object):
-    def __init__(self, url, v_url, _type):
+    def __init__(self, url, _type):
         """
         https://gist.github.com/hiway/b3686a7839acca7d62e3a7234fdbb438
         """
         self.url = url
-        self.v_url = v_url
         self.type = _type
+        self.device = get_device_id_list()
 
-        online, lv, ov = self.get_versions()
+        self.lv = self.get_version_local()
+
+        online, self.ov, self.files, self.files_url = self.get_data_online()
+
         if online:
-            self.ensure_dirs('/new/')
-            self.download_file("{}{}".format(self.url, SRC_FILENAME), '/new/{}'.format(SRC_FILENAME))
-            self.update_file()
-            self.update_version(ov)
-            self.delete_files()
+            self.download_files(self.files, self.files_url)
 
-    def get_versions(self):
-        print('getting versions and comparing')
-        ov = self.get_version_online(self.v_url)
-        lv = self.get_version_local()
-        return self.compare_versions(ov, lv), lv, ov
-
-    def get_version_online(self, url):
-        try:
-            response = requests.post(url, json=get_device_json(self.type))
-            data = response.json()
-            version = data['version']
-            response.close()
-            return self.version_string_to_list(version)
-        except OSError:
-            print("OS")
-            return None
+    def __call__(self, *args, **kwargs):
+        self.update_files(self.files)
 
     def get_version_local(self):
         data = read_json_file("/{}".format(VERSION_FILENAME))
@@ -67,23 +53,61 @@ class OTA(object):
         data = v.split('.', 3)
         return [int(i) for i in data]
 
+    def get_data_online(self):
+        print('getting versions and comparing')
+        ov, data, url = self.get_online_data(self.url)
+        return self.compare_versions(ov, self.lv), ov, data, url
+
+    def get_online_data(self, url):
+        json_payload = {
+            "deviceId": self.device,
+            "type": self.type,
+            "version":  self.lv,
+            "$OPTION": ["$GET_VERSION", "$GET_FILES"]
+        }
+        try:
+            response = requests.post(url, json=json_payload)
+            data = response.json()
+            version = data['version']
+            files = data['files']
+            files_url = data['filesUrl']
+            response.close()
+            return self.version_string_to_list(version), files, files_url
+        except OSError:
+            print("OS")
+            return None
+
     def download_file(self, url, path):
         print('Downloading (path, url): {} , {}'.format(path, url))
         with open(path, 'w') as outfile:
+            json_payload = {
+                "deviceId": self.device,
+                "type": self.type,
+                "version": self.lv,
+                "$OPTION": {
+                    "$DOWNLOAD_FILE": url
+                }
+            }
             try:
-                response = requests.post(url, json=get_device_json(self.type))
+                response = requests.post(url, json=json_payload)
                 outfile.write(response.text)
             finally:
                 response.close()
                 outfile.close()
                 gc.collect()
 
-    def update_file(self):
-        print("moving paths from {} to {}".format('/new/main.py', '/main.py'))
-        os.rename('/new/{}'.format(SRC_FILENAME), '/main.py')
+    def download_files(self, file_list, files_url):
+        self.ensure_dirs('/{}/'.format(NEW_SRC))
+        print(file_list)
+        for file in file_list:
+            self.download_file("{}/{}".format(files_url, file), '/{}/{}'.format(NEW_SRC, file))
 
-    def delete_files(self):
-        pass
+    def update_file(self, file):
+        os.rename('/{}/{}'.format(NEW_SRC, file), '/{}'.format(file))
+
+    def update_files(self, files):
+        for file in files:
+            self.update_file(file)
 
     @staticmethod
     def ensure_dirs(path):
